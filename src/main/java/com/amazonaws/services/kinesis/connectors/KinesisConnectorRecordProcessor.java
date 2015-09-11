@@ -29,6 +29,7 @@ import com.amazonaws.services.kinesis.clientlibrary.exceptions.ThrottlingExcepti
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessor;
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessorCheckpointer;
 import com.amazonaws.services.kinesis.clientlibrary.types.ShutdownReason;
+import com.amazonaws.services.kinesis.connectors.interfaces.IBatchingCollectionTransformer;
 import com.amazonaws.services.kinesis.connectors.interfaces.IBuffer;
 import com.amazonaws.services.kinesis.connectors.interfaces.ICollectionTransformer;
 import com.amazonaws.services.kinesis.connectors.interfaces.IEmitter;
@@ -145,11 +146,20 @@ public class KinesisConnectorRecordProcessor<T, U> implements IRecordProcessor {
 
     private List<U> transformToOutput(List<T> items) {
         List<U> emitItems = new ArrayList<U>();
-        for (T item : items) {
-            try {
-                emitItems.add(transformer.fromClass(item));
-            } catch (IOException e) {
-                LOG.error("Failed to transform record " + item + " to output type", e);
+        if (transformer instanceof IBatchingCollectionTransformer) {
+        	IBatchingCollectionTransformer<T, U> batchingTransformer = (IBatchingCollectionTransformer<T, U>) transformer;
+        	try {
+        		emitItems.addAll(batchingTransformer.fromClasses(items));
+        	} catch (IOException e) {
+                LOG.error("Failed to transform records " + items + " to output type", e);
+            }
+        } else {
+            for (T item : items) {
+                try {
+                    emitItems.add(transformer.fromClass(item));
+                } catch (IOException e) {
+                    LOG.error("Failed to transform record " + item + " to output type", e);
+                }
             }
         }
         return emitItems;
