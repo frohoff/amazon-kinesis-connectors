@@ -15,7 +15,6 @@
 package com.amazonaws.services.kinesis.connectors.kinesis;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -30,6 +29,7 @@ import com.amazonaws.services.kinesis.connectors.KinesisConnectorConfiguration;
 import com.amazonaws.services.kinesis.connectors.UnmodifiableBuffer;
 import com.amazonaws.services.kinesis.connectors.interfaces.IEmitter;
 import com.amazonaws.services.kinesis.model.PutRecordRequest;
+import com.amazonaws.services.kinesis.model.Record;
 
 /**
  * This implementaion of IEmitter inserts records into Amazon S3 and emits filenames into a separate
@@ -46,7 +46,7 @@ import com.amazonaws.services.kinesis.model.PutRecordRequest;
  * <p>
  * NOTE: the Amazon S3 bucket and Amazon Redshift cluster must be in the same region.
  */
-public class KinesisEmitter implements IEmitter<KinesisEmitter.Record> {
+public class KinesisEmitter implements IEmitter<Record> {
     private static final Log LOG = LogFactory.getLog(KinesisEmitter.class);
     private final AmazonKinesisClient kinesisClient;
     private final String stream;
@@ -68,14 +68,12 @@ public class KinesisEmitter implements IEmitter<KinesisEmitter.Record> {
     	List<Record> failedRecords = new LinkedList<Record>();
     	for (Record record : records) {
             PutRecordRequest putRecordRequest = new PutRecordRequest();
-            putRecordRequest.setData(ByteBuffer.wrap(record.getData()));
+            putRecordRequest.setData(record.getData());
             putRecordRequest.setStreamName(stream);
-            // FIXME: better partition key?
-            putRecordRequest.setPartitionKey(stream);
-            // FIXME:
+            putRecordRequest.setPartitionKey(record.getPartitionKey());
             try {
                 kinesisClient.putRecord(putRecordRequest);
-                LOG.info("KinesisEmitter emitted " + record.getData().length + " byte record downstream");
+                LOG.info("KinesisEmitter emitted " + record.getData().capacity() + " byte record downstream");
             } catch (Exception e) {
             	// TODO: retry?
                 LOG.error(e);
@@ -88,30 +86,12 @@ public class KinesisEmitter implements IEmitter<KinesisEmitter.Record> {
     @Override
     public void fail(List<Record> records) {
         for (Record record : records) {
-            LOG.error("Record failed: " + Arrays.toString(record.getData()));
+            LOG.error("Record failed: " + Arrays.toString(record.getData().array()));
         }
     }
 
     @Override
     public void shutdown() {
         kinesisClient.shutdown();
-    }
-
-    public static class Record {
-    	private final String key;
-    	private final byte[] data;
-
-		public Record(String key, byte[] data) {
-			this.key = key;
-			this.data = data;
-		}
-
-		public byte[] getData() {
-			return data;
-		}
-
-		public String getKey() {
-			return key;
-		}
     }
 }

@@ -28,14 +28,14 @@ import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionIn
  * should use System properties to set their proper configuration. An instance of
  * KinesisConnectorConfiguration is created with System properties and an AWSCredentialsProvider.
  * For example:
- * 
+ *
  * <pre>
  * Properties prop = new Properties();
  * prop.put(KinesisConnectorConfiguration.PROP_APP_NAME, &quot;MyKinesisConnector&quot;);
  * KinesisConnectorConfiguration config =
  *         new KinesisConnectorConfiguration(prop, new DefaultAWSCredentialsProviderChain());
  * </pre>
- * 
+ *
  */
 public class KinesisConnectorConfiguration {
     private static final Log LOG = LogFactory.getLog(KinesisConnectorConfiguration.class);
@@ -102,6 +102,10 @@ public class KinesisConnectorConfiguration {
             "elasticsearchCloudFormationSSHLocation";
     public static final String PROP_ELASTICSEARCH_CLOUDFORMATION_CLUSTER_SIZE =
             "elasticsearchCloudFormationClusterSize";
+    public static final String PROP_HTTP_URL = "httpUrl";
+    public static final String PROP_HTTP_METHOD = "httpMethod";
+    public static final String PROP_HTTP_SUCCESSFUL_STATUS_CODES = "httpSuccessfulStatusCodes";
+    public static final String PROP_HTTP_HEADERS = "httpHeaders";
 
     // Default Connector App Constants
     public static final String DEFAULT_APP_NAME = "KinesisConnector";
@@ -175,6 +179,11 @@ public class KinesisConnectorConfiguration {
     public static final String DEFAULT_ELASTICSEARCH_CLOUDFORMATION_SSH_LOCATION = "0.0.0.0/0";
     public static final String DEFAULT_ELASTICSEARCH_CLOUDFORMATION_CLUSTER_SIZE = "3";
 
+    // Default HTTP constants
+    public static final String DEFAULT_HTTP_METHOD = "POST";
+    public static final String DEFAULT_HTTP_SUCCESSFUL_STATUS_CODES = "200,201,202,204";
+
+
     private static final String CONNECTION_DESTINATION_PREFIX = "amazon-kinesis-connector-to-";
 
     // Configurable program variables
@@ -236,11 +245,15 @@ public class KinesisConnectorConfiguration {
     public final String ELASTICSEARCH_CLOUDFORMATION_CLUSTER_INSTANCE_TYPE;
     public final String ELASTICSEARCH_CLOUDFORMATION_SSH_LOCATION;
     public final String ELASTICSEARCH_CLOUDFORMATION_CLUSTER_SIZE;
+	public final String HTTP_URL;
+	public final String HTTP_METHOD;
+	public final String HTTP_SUCCESSFUL_STATUS_CODES;
+	public final String HTTP_HEADERS;
 
     /**
      * Configure the connector application with any set of properties that are unique to the application. Any
      * unspecified property will be set to a default value.
-     * 
+     *
      * @param properties
      *        the System properties that will be used to configure KinesisConnectors
      */
@@ -349,6 +362,14 @@ public class KinesisConnectorConfiguration {
         ELASTICSEARCH_CLOUDFORMATION_CLUSTER_SIZE =
                 properties.getProperty(PROP_ELASTICSEARCH_CLOUDFORMATION_CLUSTER_SIZE,
                         DEFAULT_ELASTICSEARCH_CLOUDFORMATION_CLUSTER_SIZE);
+
+        HTTP_URL = properties.getProperty(PROP_HTTP_URL);
+        HTTP_METHOD = properties.getProperty(PROP_HTTP_METHOD, DEFAULT_HTTP_METHOD);
+        HTTP_SUCCESSFUL_STATUS_CODES =
+        		properties.getProperty(PROP_HTTP_SUCCESSFUL_STATUS_CODES,
+        				DEFAULT_HTTP_SUCCESSFUL_STATUS_CODES);
+        HTTP_HEADERS = properties.getProperty(PROP_HTTP_HEADERS);
+
 
         // Amazon Kinesis Client Library configuration
         WORKER_ID = properties.getProperty(PROP_WORKER_ID, DEFAULT_WORKER_ID);
